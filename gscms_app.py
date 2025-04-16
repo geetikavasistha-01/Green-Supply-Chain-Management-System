@@ -1,73 +1,45 @@
+# Step 1: Basic Streamlit Setup for GSCMS Dashboard with MongoDB Integration
+
 import streamlit as st
-import pandas as pd
-import plotly.express as px
 from pymongo import MongoClient
+import pandas as pd
 
-# ---- MONGODB CONNECTION ----
-client = MongoClient("mongodb://localhost:27017/")
+# MongoDB Connection
+client = MongoClient("mongodb+srv://geetikavasistha13:01gWVJgQKvq0gUes@gscms.ph6se0s.mongodb.net/")
 db = client["gscms"]
-suppliers_col = db["suppliers"]
 
-# ---- STREAMLIT SETTINGS ----
-st.set_page_config(page_title="GSCMS", layout="wide")
-st.markdown("<h1 style='text-align: center; color: lightgreen;'>🌿 Green Supply Chain Management System (GSCMS)</h1>", unsafe_allow_html=True)
+# Function to fetch collection data
+def load_data(collection_name):
+    collection = db[collection_name]
+    data = list(collection.find())
+    if data:
+        for item in data:
+            item["_id"] = str(item["_id"])
+        return pd.DataFrame(data)
+    return pd.DataFrame()
 
-# ---- SIDEBAR NAVIGATION ----
-tabs = ["Dashboard", "Suppliers", "Manufacturers", "Products", "Transportation", "Audits", "Regulations"]
-selected_tab = st.sidebar.radio("Select Section", tabs)
+# Streamlit UI
+st.set_page_config(page_title="Green Supply Chain Management System", layout="wide")
 
-# ---- DASHBOARD TAB ----
-if selected_tab == "Dashboard":
-    st.subheader("📊 Sustainability Dashboard")
+st.title("🌱 Green Supply Chain Management System (GSCMS) Dashboard")
 
-    # Sample Data
-    eco_data = {
-        "Supplier": ["EcoTex", "GreenPlast", "BioLogix", "SunRenew"],
-        "Carbon Emission (kg CO2)": [120, 80, 40, 20],
-        "Recyclable Material (%)": [60, 70, 90, 85],
-        "Renewable Energy Usage (%)": [50, 65, 80, 95],
-    }
-    df_eco = pd.DataFrame(eco_data)
+tabs = st.tabs(["Suppliers", "Manufacturers", "Products", "Transportation", "Audits", "Regulations"])
 
-    # Charts
-    col1, col2 = st.columns(2)
-    with col1:
-        fig1 = px.bar(df_eco, x="Supplier", y="Carbon Emission (kg CO2)", color="Supplier", title="Carbon Emissions by Supplier")
-        st.plotly_chart(fig1, use_container_width=True)
+# Render collections as tables
+collection_names = ["suppliers", "manufacturers", "products", "transportations", "audits", "regulations"]
+tab_titles = ["Suppliers", "Manufacturers", "Products", "Transportation", "Audits", "Regulations"]
 
-    with col2:
-        fig2 = px.pie(df_eco, names="Supplier", values="Recyclable Material (%)", title="Recyclable Material Share")
-        st.plotly_chart(fig2, use_container_width=True)
-
-    fig3 = px.line(df_eco, x="Supplier", y="Renewable Energy Usage (%)", title="Renewable Energy Usage")
-    st.plotly_chart(fig3, use_container_width=True)
-
-# ---- SUPPLIERS TAB ----
-elif selected_tab == "Suppliers":
-    st.subheader("🏭 Manage Suppliers")
-
-    with st.expander("➕ Add New Supplier"):
-        name = st.text_input("Supplier Name")
-        location = st.text_input("Location")
-        compliance = st.slider("Green Compliance (%)", 0, 100, 70)
-        if st.button("Save Supplier"):
-            if name and location:
-                suppliers_col.insert_one({"name": name, "location": location, "compliance": compliance})
-                st.success(f"Supplier '{name}' added successfully!")
-            else:
-                st.warning("Please fill all fields.")
-
-    with st.expander("📄 View All Suppliers"):
-        data = list(suppliers_col.find({}, {"_id": 0}))
-        if data:
-            df = pd.DataFrame(data)
-            st.dataframe(df)
+for i, tab in enumerate(tabs):
+    with tab:
+        st.subheader(f"{tab_titles[i]} Records")
+        df = load_data(collection_names[i])
+        if not df.empty:
+            st.dataframe(df, use_container_width=True)
         else:
-            st.info("No supplier data found.")
+            st.info("No records found in this collection.")
 
-# ---- OTHER TABS ----
-else:
-    st.subheader(f"{selected_tab} - Section under construction 🚧")
+client.close()
+
 
 
 
