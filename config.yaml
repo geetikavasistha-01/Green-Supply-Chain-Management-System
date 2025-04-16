@@ -1,0 +1,15 @@
+credentials:
+  usernames:
+    admin:
+      name: Admin User
+      password: 'admin123'  # Will be hashed
+    user1:
+      name: User One
+      password: 'user123'
+cookie:
+  expiry_days: 1
+  key: 'gscms_key'
+  name: 'gscms_cookie'
+preauthorized:
+  emails:
+    - admin@example.com
